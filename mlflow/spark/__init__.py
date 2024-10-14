@@ -254,7 +254,9 @@ def log_model(
     run_id = mlflow.tracking.fluent._get_or_start_run().info.run_id
     run_root_artifact_uri = mlflow.get_artifact_uri()
     remote_model_path = None
+    print('run_root_artifact_uri is', run_root_artifact_uri)
     if _should_use_mlflowdbfs(run_root_artifact_uri):
+        print('inside mlflowdbfs')
         remote_model_path = append_to_uri_path(
             run_root_artifact_uri, artifact_path, _SPARK_MODEL_PATH_SUB
         )
@@ -277,6 +279,7 @@ def log_model(
         spark_model,
         append_to_uri_path(run_root_artifact_uri, artifact_path),
     ):
+        print('inside is_local_uri')
         return Model.log(
             artifact_path=artifact_path,
             flavor=mlflow.spark,

@@ -620,7 +620,11 @@ class Model:
             ):
                 _logger.warning(_LOG_MODEL_MISSING_SIGNATURE_WARNING)
             print("log model.py from mlflow local_path is", local_path)
+            print("flavour is", flavor)
+            print("flavour type is", type(flavor))
+            print("extra arguments", kwargs)
             flavor.save_model(path=local_path, mlflow_model=mlflow_model, **kwargs)
+            print("passing flavour save")
             mlflow.tracking.fluent.log_artifacts(local_path, mlflow_model.artifact_path, run_id)
             try:
                 mlflow.tracking.fluent._record_logged_model(mlflow_model, run_id)

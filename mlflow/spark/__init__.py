@@ -18,6 +18,7 @@ Spark MLlib (native) format
     ``mlflow/java`` package. This flavor is produced only if you specify
     MLeap-compatible arguments.
 """
+
 import logging
 import os
 import posixpath
@@ -254,9 +255,9 @@ def log_model(
     run_id = mlflow.tracking.fluent._get_or_start_run().info.run_id
     run_root_artifact_uri = mlflow.get_artifact_uri()
     remote_model_path = None
-    print('run_root_artifact_uri is', run_root_artifact_uri)
+    print("run_root_artifact_uri is", run_root_artifact_uri)
     if _should_use_mlflowdbfs(run_root_artifact_uri):
-        print('inside mlflowdbfs')
+        print("inside mlflowdbfs")
         remote_model_path = append_to_uri_path(
             run_root_artifact_uri, artifact_path, _SPARK_MODEL_PATH_SUB
         )
@@ -279,7 +280,7 @@ def log_model(
         spark_model,
         append_to_uri_path(run_root_artifact_uri, artifact_path),
     ):
-        print('inside is_local_uri')
+        print("inside is_local_uri")
         return Model.log(
             artifact_path=artifact_path,
             flavor=mlflow.spark,
@@ -330,9 +331,7 @@ def _mlflowdbfs_path(run_id, artifact_path):
             f"artifact_path should be relative, found: {artifact_path}",
             INVALID_PARAMETER_VALUE,
         )
-    return "{}:///artifacts?run_id={}&path=/{}".format(
-        _MLFLOWDBFS_SCHEME, run_id, posixpath.join(artifact_path, _SPARK_MODEL_PATH_SUB)
-    )
+    return f"{_MLFLOWDBFS_SCHEME}:///artifacts?run_id={run_id}&path=/{posixpath.join(artifact_path, _SPARK_MODEL_PATH_SUB)}"
 
 
 def _maybe_save_model(spark_model, model_dir):
@@ -370,6 +369,7 @@ class _HadoopFileSystem:
     def _fs(cls):
         if not cls._filesystem:
             cls._filesystem = cls._jvm().org.apache.hadoop.fs.FileSystem.get(cls._conf())
+        print("cls filesystem", cls._filesystem)
         return cls._filesystem
 
     @classmethod
@@ -377,6 +377,7 @@ class _HadoopFileSystem:
         from pyspark import SparkContext
 
         sc = SparkContext.getOrCreate()
+        print('hadoop configuration is', sc._jsc.hadoopConfiguration())
         return sc._jsc.hadoopConfiguration()
 
     @classmethod
@@ -393,6 +394,7 @@ class _HadoopFileSystem:
 
     @classmethod
     def copy_to_local_file(cls, src, dst, remove_src):
+        print('copying to local file src:', src, ' dst:', dst)
         cls._fs().copyToLocalFile(remove_src, cls._remote_path(src), cls._local_path(dst))
 
     @classmethod
@@ -753,12 +755,12 @@ def save_model(
     else:
         # Spark ML stores the model on DFS if running on a cluster
         # Save it to a DFS temp dir first and copy it to local path
-        print('dfs_tmpdir is', dfs_tmpdir)
+        print("dfs_tmpdir is", dfs_tmpdir)
         if dfs_tmpdir is None:
             dfs_tmpdir = MLFLOW_DFS_TMP.get()
-            print('dfs_tempdir was none and so it was set to', dfs_tmpdir)
+            print("dfs_tempdir was none and so it was set to", dfs_tmpdir)
         tmp_path = generate_tmp_dfs_path(dfs_tmpdir)
-        print('tmp_path is', tmp_path)
+        print("tmp_path is", tmp_path)
         spark_model.save(tmp_path)
         # We're copying the Spark model from DBFS to the local filesystem if (a) the temporary DFS
         # URI we saved the Spark model to is a DBFS URI ("dbfs:/my-directory"), or (b) if we're
@@ -767,12 +769,12 @@ def save_model(
         copying_from_dbfs = is_valid_dbfs_uri(tmp_path) or (
             databricks_utils.is_in_cluster() and posixpath.abspath(tmp_path) == tmp_path
         )
-        print('copying from dbfs is', copying_from_dbfs)
+        print("copying from dbfs is", copying_from_dbfs)
         if copying_from_dbfs and databricks_utils.is_dbfs_fuse_available():
             tmp_path_fuse = dbfs_hdfs_uri_to_fuse_path(tmp_path)
             shutil.move(src=tmp_path_fuse, dst=sparkml_data_path)
         else:
-            print('inside failing', tmp_path, sparkml_data_path)
+            print("inside failing", tmp_path, sparkml_data_path)
             _HadoopFileSystem.copy_to_local_file(tmp_path, sparkml_data_path, remove_src=True)
 
     _save_model_metadata(
@@ -992,7 +994,9 @@ class _PyFuncModelWrapper:
         self.spark_model = spark_model
 
     def predict(
-        self, pandas_df, params: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
+        self,
+        pandas_df,
+        params: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
     ):
         """
         Generate predictions given input data in a pandas DataFrame.

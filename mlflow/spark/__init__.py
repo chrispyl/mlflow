@@ -753,9 +753,12 @@ def save_model(
     else:
         # Spark ML stores the model on DFS if running on a cluster
         # Save it to a DFS temp dir first and copy it to local path
+        print('dfs_tmpdir is', dfs_tmpdir)
         if dfs_tmpdir is None:
             dfs_tmpdir = MLFLOW_DFS_TMP.get()
+            print('dfs_tempdir was none and so it was set to', dfs_tmpdir)
         tmp_path = generate_tmp_dfs_path(dfs_tmpdir)
+        print('tmp_path is', tmp_path)
         spark_model.save(tmp_path)
         # We're copying the Spark model from DBFS to the local filesystem if (a) the temporary DFS
         # URI we saved the Spark model to is a DBFS URI ("dbfs:/my-directory"), or (b) if we're
@@ -764,10 +767,12 @@ def save_model(
         copying_from_dbfs = is_valid_dbfs_uri(tmp_path) or (
             databricks_utils.is_in_cluster() and posixpath.abspath(tmp_path) == tmp_path
         )
+        print('copying from dbfs is', copying_from_dbfs)
         if copying_from_dbfs and databricks_utils.is_dbfs_fuse_available():
             tmp_path_fuse = dbfs_hdfs_uri_to_fuse_path(tmp_path)
             shutil.move(src=tmp_path_fuse, dst=sparkml_data_path)
         else:
+            print('inside failing', tmp_path, sparkml_data_path)
             _HadoopFileSystem.copy_to_local_file(tmp_path, sparkml_data_path, remove_src=True)
 
     _save_model_metadata(

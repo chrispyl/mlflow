@@ -611,6 +611,7 @@ class Model:
             local_path = tmp.path("model")
             if run_id is None:
                 run_id = mlflow.tracking.fluent._get_or_start_run().info.run_id
+            print('artifact path in Model.log is', artifact_path)
             mlflow_model = cls(artifact_path=artifact_path, run_id=run_id, metadata=metadata)
             tracking_uri = _resolve_tracking_uri()
             if (
